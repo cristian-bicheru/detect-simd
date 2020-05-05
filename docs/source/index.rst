@@ -6,7 +6,7 @@ Detect-SIMD is a lightweight Python library implementing a single function `dete
 which detects the SIMD capabilities of the user's CPU/OS. This is useful for building
 vectorized packages.
 
-.. _detect: https://detect-simd.readthedocs.io/en/latest/#detect
+.. _detect: https://detect-simd.readthedocs.io/en/latest/#id1
 
 Detect
 ###################################
