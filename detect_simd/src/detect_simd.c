@@ -6,66 +6,66 @@
 #include <stdbool.h>
 
 #ifdef _WIN32
-//  Windows
-#include <intrin.h>
-#define cpuid(info, x)    __cpuidex(info, x, 0)
+    #include <intrin.h>
+    #define cpuid(info, x)    __cpuidex(info, x, 0)
 #else
-//  GCC Intrinsics
-#include <cpuid.h>
-void cpuid(int info[4], int InfoType){
-    __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
-}
-unsigned long long _xgetbv(unsigned int index)
-{
-    unsigned int eax, edx;
-    __asm__ __volatile__(
-    "xgetbv;"
-    : "=a" (eax), "=d"(edx)
-    : "c" (index)
-    );
-    return ((unsigned long long)edx << 32) | eax;
-}
+    #include <cpuid.h>
+    void cpuid(int info[4], int InfoType) {
+        __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
+    }
+
+    unsigned long long _xgetbv(unsigned int index) {
+        unsigned int eax, edx;
+        __asm__ __volatile__(
+        "xgetbv;"
+        : "=a" (eax), "=d"(edx)
+        : "c" (index)
+        );
+        return ((unsigned long long) edx << 32) | eax;
+    }
 #endif
 
+const char* names[31] = {
+        "MMX",
+        "x64",
+        "ABM",
+        "RDRAND",
+        "BMI1",
+        "BMI2",
+        "ADX",
+        "PREFETCHWT1",
+        "SSE",
+        "SSE2",
+        "SSE3",
+        "SSSE3",
+        "SSE41",
+        "SSE42",
+        "SSE4a",
+        "AES",
+        "SHA",
+        "AVX",
+        "XOP",
+        "FMA3",
+        "FMA4",
+        "AVX2",
+        "AVX512F",
+        "AVX512CD",
+        "AVX512PF",
+        "AVX512ER",
+        "AVX512VL",
+        "AVX512BW",
+        "AVX512DQ",
+        "AVX512IFMA",
+        "AVX512VBMI",
+};
+
+const char pydictstr[125] = "{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,"
+                             "s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,"
+                             "s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}";
+
 static PyObject* detect(PyObject* self, PyObject* args) {
-//  Misc.
-    bool HW_MMX = false;
-    bool HW_x64 = false;
-    bool HW_ABM = false;      // Advanced Bit Manipulation
-    bool HW_RDRAND = false;
-    bool HW_BMI1 = false;
-    bool HW_BMI2 = false;
-    bool HW_ADX = false;
-    bool HW_PREFETCHWT1 = false;
-
-//  SIMD: 128-bit
-    bool HW_SSE = false;
-    bool HW_SSE2 = false;
-    bool HW_SSE3 = false;
-    bool HW_SSSE3 = false;
-    bool HW_SSE41 = false;
-    bool HW_SSE42 = false;
-    bool HW_SSE4a = false;
-    bool HW_AES = false;
-    bool HW_SHA = false;
-
-//  SIMD: 256-bit
-    bool HW_AVX = false;
-    bool HW_XOP = false;
-    bool HW_FMA3 = false;
-    bool HW_FMA4 = false;
-    bool HW_AVX2 = false;
-
-//  SIMD: 512-bit
-    bool HW_AVX512F = false;    //  AVX512 Foundation
-    bool HW_AVX512CD = false;   //  AVX512 Conflict Detection
-    bool HW_AVX512PF = false;   //  AVX512 Prefetch
-    bool HW_AVX512ER = false;   //  AVX512 Exponential + Reciprocal
-    bool HW_AVX512VL = false;   //  AVX512 Vector Length Extensions
-    bool HW_AVX512BW = false;   //  AVX512 Byte + Word
-    bool HW_AVX512DQ = false;   //  AVX512 Doubleword + Quadword
-    bool HW_AVX512IFMA = false; //  AVX512 Integer 52-bit Fused Multiply-Add
-    bool HW_AVX512VBMI = false; //  AVX512 Vector Byte Manipulation Instructions
+    bool flags[31] = {0};
+    
 
     int info[4];
     cpuid(info, 0);
@@ -77,77 +77,105 @@ static PyObject* detect(PyObject* self, PyObject* args) {
 //  Detect Features
     if (nIds >= 0x00000001) {
         cpuid(info, 0x00000001);
-        HW_MMX = (info[3] & ((int) 1 << 23)) != 0;
-        HW_SSE = (info[3] & ((int) 1 << 25)) != 0;
-        HW_SSE2 = (info[3] & ((int) 1 << 26)) != 0;
-        HW_SSE3 = (info[2] & ((int) 1 << 0)) != 0;
+        flags[0] = (info[3] & ((int) 1 << 23)) != 0;
+        flags[8] = (info[3] & ((int) 1 << 25)) != 0;
+        flags[9] = (info[3] & ((int) 1 << 26)) != 0;
+        flags[10] = (info[2] & ((int) 1 << 0)) != 0;
 
-        HW_SSSE3 = (info[2] & ((int) 1 << 9)) != 0;
-        HW_SSE41 = (info[2] & ((int) 1 << 19)) != 0;
-        HW_SSE42 = (info[2] & ((int) 1 << 20)) != 0;
-        HW_AES = (info[2] & ((int) 1 << 25)) != 0;
+        flags[11] = (info[2] & ((int) 1 << 9)) != 0;
+        flags[12] = (info[2] & ((int) 1 << 19)) != 0;
+        flags[13] = (info[2] & ((int) 1 << 20)) != 0;
+        flags[15] = (info[2] & ((int) 1 << 25)) != 0;
 
-        HW_AVX = (info[2] & ((int) 1 << 28)) != 0;
-        HW_FMA3 = (info[2] & ((int) 1 << 12)) != 0;
+        flags[17] = (info[2] & ((int) 1 << 28)) != 0;
+        flags[19] = (info[2] & ((int) 1 << 12)) != 0;
 
-        HW_RDRAND = (info[2] & ((int) 1 << 30)) != 0;
+        flags[3] = (info[2] & ((int) 1 << 30)) != 0;
     }
     if (nIds >= 0x00000007) {
         cpuid(info, 0x00000007);
-        HW_AVX2 = (info[1] & ((int) 1 << 5)) != 0;
+        flags[21] = (info[1] & ((int) 1 << 5)) != 0;
 
-        HW_BMI1 = (info[1] & ((int) 1 << 3)) != 0;
-        HW_BMI2 = (info[1] & ((int) 1 << 8)) != 0;
-        HW_ADX = (info[1] & ((int) 1 << 19)) != 0;
-        HW_SHA = (info[1] & ((int) 1 << 29)) != 0;
-        HW_PREFETCHWT1 = (info[2] & ((int) 1 << 0)) != 0;
+        flags[4] = (info[1] & ((int) 1 << 3)) != 0;
+        flags[5] = (info[1] & ((int) 1 << 8)) != 0;
+        flags[6] = (info[1] & ((int) 1 << 19)) != 0;
+        flags[16] = (info[1] & ((int) 1 << 29)) != 0;
+        flags[7] = (info[2] & ((int) 1 << 0)) != 0;
 
-        HW_AVX512F = (info[1] & ((int) 1 << 16)) != 0;
-        HW_AVX512CD = (info[1] & ((int) 1 << 28)) != 0;
-        HW_AVX512PF = (info[1] & ((int) 1 << 26)) != 0;
-        HW_AVX512ER = (info[1] & ((int) 1 << 27)) != 0;
-        HW_AVX512VL = (info[1] & ((int) 1 << 31)) != 0;
-        HW_AVX512BW = (info[1] & ((int) 1 << 30)) != 0;
-        HW_AVX512DQ = (info[1] & ((int) 1 << 17)) != 0;
-        HW_AVX512IFMA = (info[1] & ((int) 1 << 21)) != 0;
-        HW_AVX512VBMI = (info[2] & ((int) 1 << 1)) != 0;
+        flags[22] = (info[1] & ((int) 1 << 16)) != 0;
+        flags[23] = (info[1] & ((int) 1 << 28)) != 0;
+        flags[24] = (info[1] & ((int) 1 << 26)) != 0;
+        flags[25] = (info[1] & ((int) 1 << 27)) != 0;
+        flags[26] = (info[1] & ((int) 1 << 31)) != 0;
+        flags[27] = (info[1] & ((int) 1 << 30)) != 0;
+        flags[28] = (info[1] & ((int) 1 << 17)) != 0;
+        flags[29] = (info[1] & ((int) 1 << 21)) != 0;
+        flags[30] = (info[2] & ((int) 1 << 1)) != 0;
     }
     if (nExIds >= 0x80000001) {
         cpuid(info, 0x80000001);
-        HW_x64 = (info[3] & ((int) 1 << 29)) != 0;
-        HW_ABM = (info[2] & ((int) 1 << 5)) != 0;
-        HW_SSE4a = (info[2] & ((int) 1 << 6)) != 0;
-        HW_FMA4 = (info[2] & ((int) 1 << 16)) != 0;
-        HW_XOP = (info[2] & ((int) 1 << 11)) != 0;
+        flags[1] = (info[3] & ((int) 1 << 29)) != 0;
+        flags[2] = (info[2] & ((int) 1 << 5)) != 0;
+        flags[14] = (info[2] & ((int) 1 << 6)) != 0;
+        flags[20] = (info[2] & ((int) 1 << 16)) != 0;
+        flags[18] = (info[2] & ((int) 1 << 11)) != 0;
     }
 
     bool osUsesXSAVE_XRSTORE = info[2] & (1 << 27) || false;
-    if (osUsesXSAVE_XRSTORE && HW_AVX)
+    if (osUsesXSAVE_XRSTORE && flags[17])
     {
         unsigned long long xcrFeatureMask = _xgetbv(0);
-        HW_AVX = (xcrFeatureMask & 0x6) == 0x6;
-        if (HW_AVX2) {
-            HW_AVX2 = HW_AVX;
+        flags[17] = (xcrFeatureMask & 0x6) == 0x6;
+        if (flags[21]) {
+            flags[21] = flags[17];
+        }
+    }
+    
+    osUsesXSAVE_XRSTORE = info[2] & (1 << 27) || false;
+    if (osUsesXSAVE_XRSTORE && flags[22])
+    {
+        unsigned long long xcrFeatureMask = _xgetbv(0);
+        flags[22] = (xcrFeatureMask & 0xe6) == 0xe6;
+
+        for (int i = 23; i < 31; i++) {
+            if (flags[i]) {
+                flags[i] = flags[22];
+            }
         }
     }
 
-    osUsesXSAVE_XRSTORE = info[2] & (1 << 27) || false;
-    if (osUsesXSAVE_XRSTORE && HW_AVX512F)
-    {
-        unsigned long long xcrFeatureMask = _xgetbv(0);
-        HW_AVX512F = (xcrFeatureMask & 0xe6) == 0xe6;
-    }
 
-    PyObject* support = Py_BuildValue("{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
-                                      "x64", HW_x64,
-                                      "SSE", HW_SSE,
-                                      "SSE2", HW_SSE2,
-                                      "SSSE3", HW_SSSE3,
-                                      "SSE4.1", HW_SSE41,
-                                      "SSE4.2", HW_SSE42,
-                                      "AVX", HW_AVX,
-                                      "AVX2", HW_AVX2,
-                                      "AVX512", HW_AVX512F);
+    PyObject* support = Py_BuildValue(pydictstr, names[0], flags[0],
+                                      names[1], flags[1],
+                                      names[2], flags[2],
+                                      names[3], flags[3],
+                                      names[4], flags[4],
+                                      names[5], flags[5],
+                                      names[6], flags[6],
+                                      names[7], flags[7],
+                                      names[8], flags[8],
+                                      names[9], flags[9],
+                                      names[10], flags[10],
+                                      names[11], flags[11],
+                                      names[12], flags[12],
+                                      names[13], flags[13],
+                                      names[14], flags[14],
+                                      names[15], flags[15],
+                                      names[16], flags[16],
+                                      names[17], flags[17],
+                                      names[18], flags[18],
+                                      names[19], flags[19],
+                                      names[20], flags[20],
+                                      names[21], flags[21],
+                                      names[22], flags[22],
+                                      names[23], flags[23],
+                                      names[24], flags[24],
+                                      names[25], flags[25],
+                                      names[26], flags[26],
+                                      names[27], flags[27],
+                                      names[28], flags[28],
+                                      names[29], flags[29],
+                                      names[30], flags[30]);
     return support;
 }
 
