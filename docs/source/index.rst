@@ -2,10 +2,11 @@
 Detect-SIMD |version| Documentation
 ===================================
 
-Detect-SIMD is a Python library implementing a single function "detect" which
+Detect-SIMD is a Python library implementing a single function `detect`_ which
 detects the SIMD capabilities of the user's CPU/OS. This is useful for building
 vectorized packages.
 
+.. _detect: https://detect-simd.readthedocs.io/en/latest/#detect
 
 Detect
 ###################################
@@ -13,11 +14,11 @@ Detect
    
    Detect CPU SIMD Capabilities.
 
-   :return: Dict containing supported SIMD instruction sets. Each supported instruction set maps to either a 0 or a 1 indicating if it is supported by the user's computer.
+   :return: Dictionary containing each SIMD instruction set. Each instruction set maps to either a 0 or a 1 indicating if it is supported by the user's computer.
    :rtype: dict
 
 
-Supported SIMD Instruction Sets
+Detectable SIMD Instruction Sets
 ###################################
   * MMX
   * x64
