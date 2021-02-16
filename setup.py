@@ -4,7 +4,7 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
-core = Extension('detect_simd/core',
+core = Extension('detect_simd.core',
                    sources=['detect_simd/src/detect_simd.c'])
 
 setup(name = 'detect_simd',
